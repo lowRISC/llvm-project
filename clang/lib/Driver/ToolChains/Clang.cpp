@@ -2018,6 +2018,25 @@ void Clang::AddRISCVTargetArgs(const ArgList &Args,
   CmdArgs.push_back(ABIName.data());
 
   SetRISCVSmallDataLimit(getToolChain(), Args, CmdArgs);
+
+  // Enable/disable return address signing.
+  if (Arg *A = Args.getLastArg(options::OPT_msign_return_address_EQ)) {
+
+    const Driver &D = getToolChain().getDriver();
+
+    StringRef Scope;
+
+    if (A->getOption().matches(options::OPT_msign_return_address_EQ)) {
+      Scope = A->getValue();
+      if (!Scope.equals("none") && !Scope.equals("non-leaf") &&
+          !Scope.equals("all"))
+        D.Diag(diag::err_invalid_branch_protection)
+            << Scope << A->getAsString(Args);
+    }
+
+    CmdArgs.push_back(
+        Args.MakeArgString(Twine("-msign-return-address=") + Scope));
+  }
 }
 
 void Clang::AddSparcTargetArgs(const ArgList &Args,

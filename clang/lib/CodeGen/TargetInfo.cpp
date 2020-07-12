@@ -10552,6 +10552,18 @@ public:
     const auto *FD = dyn_cast_or_null<FunctionDecl>(D);
     if (!FD) return;
 
+    auto *Fn = cast<llvm::Function>(GV);
+
+    // Add sign-return-address attribute to function
+    LangOptions::SignReturnAddressScopeKind Scope =
+        CGM.getLangOpts().getSignReturnAddressScope();
+    if (Scope != LangOptions::SignReturnAddressScopeKind::None) {
+      Fn->addFnAttr("sign-return-address",
+                    Scope == LangOptions::SignReturnAddressScopeKind::All
+                        ? "all"
+                        : "non-leaf");
+    }
+
     const auto *Attr = FD->getAttr<RISCVInterruptAttr>();
     if (!Attr)
       return;
@@ -10562,8 +10574,6 @@ public:
     case RISCVInterruptAttr::supervisor: Kind = "supervisor"; break;
     case RISCVInterruptAttr::machine: Kind = "machine"; break;
     }
-
-    auto *Fn = cast<llvm::Function>(GV);
 
     Fn->addFnAttr("interrupt", Kind);
   }
