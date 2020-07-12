@@ -552,6 +552,48 @@ def SRAW  : ALUW_rr<0b0100000, 0b101, "sraw">,
 } // Predicates = [IsRV64]
 
 //===----------------------------------------------------------------------===//
+// Custom instructions for Ibex pointer authentication
+//===----------------------------------------------------------------------===//
+
+// This instruction computes a pointer authentication code for a pointer,
+// using a context and key, and stores the pointer authentication code to
+// a general register. Also, the upper bits of the pointer are rewritten to
+// an invalid address and the upper bits of the pointer are stored in the
+// upper bits of the register that stores the pointer authentication code.
+// PAC <rd>, <rs1>, <rs2>
+// - The pointer is in the general-purpose register that is specified by <rs1>.
+// - The context is in the general-purpose register that is specified by <rs2>.
+// - The upper bits of the pointer that is specified by <rs1> are rewritten.
+// - The generated pointer authenticaiotn code is stored in the general-purpose
+//   register that is specified by <rd>.
+let hasSideEffects = 0, mayLoad = 0, mayStore = 0 in
+def PAC
+    : RVInstR<0b0000000, 0b000, OPC_CUSTOM0, (outs GPR:$rd, GPR:$rs1_wb),
+              (ins GPR:$rs1, GPR:$rs2), "pac", "$rd, $rs1, $rs2">, Sched<[]> {
+    let Constraints = "$rs1 = $rs1_wb";
+}
+
+// This instruction authenticates a pointer, using a context and key. If the
+// authentication is successful, the upper bits of pointer are rewritten to
+// the original value. If it fails, the upper bits of pointer are not rewritten,
+// so it is expected that an error will occur when using the pointer later.
+// Also, this instruction does not cause an exception, so it has no side effects.
+// AUT <rd>, <rs1>, <rs2>, <rs3>
+// - The lower bits of pointer are in the general-purpose register that is
+//   specified by <rs1>.
+// - The pointer authentication code and the upper bits of pointer is in
+//   the general-purpose register that is specified by <rs2>.
+// - The context is in the general-purpose register that is specified by <rs3>.
+// - The authenticated pointer is stored in the general-purpose register that is
+//   specified by <rd>.
+let hasSideEffects = 0, mayLoad = 0, mayStore = 0 in
+def AUT
+    : RVInstR4<0b00, OPC_CUSTOM0, (outs GPR:$rd),
+              (ins GPR:$rs1, GPR:$rs2, GPR:$rs3), "aut", "$rd, $rs1, $rs2, $rs3">, Sched<[]> {
+    let Inst{14-12} = 0b001; // func3
+}
+
+//===----------------------------------------------------------------------===//
 // Privileged instructions
 //===----------------------------------------------------------------------===//
 
