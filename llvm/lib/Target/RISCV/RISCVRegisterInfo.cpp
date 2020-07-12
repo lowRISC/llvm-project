@@ -36,6 +36,22 @@ static_assert(RISCV::F1_D == RISCV::F0_D + 1, "Register list not consecutive");
 static_assert(RISCV::F31_D == RISCV::F0_D + 31,
               "Register list not consecutive");
 
+bool shouldReservePACRegister(const MachineFunction &MF) {
+  // The function should reserve X31(which is used as a register
+  // to store pointer authentication code) in the following situations:
+  // - sign-return-address=all      and RV32
+  // - sign-return-address=non-leaf and RV32
+  // When this function is a leaf function and sign-return-address=non-leaf,
+  // it is not necessary to save X31, but when this function is executed,
+  // it is still unknown whether this function is a leaf function.
+
+  RISCVSubtarget::SignReturnAddress attr = RISCVSubtarget::checkSignReturnAddress(MF);
+  if (attr == RISCVSubtarget::NON_LEAF || attr == RISCVSubtarget::ALL)
+    return true;
+
+  return false;
+}
+
 RISCVRegisterInfo::RISCVRegisterInfo(unsigned HwMode)
     : RISCVGenRegisterInfo(RISCV::X1, /*DwarfFlavour*/0, /*EHFlavor*/0,
                            /*PC*/0, HwMode) {}
@@ -87,6 +103,11 @@ BitVector RISCVRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   // variable-sized objects at runtime.
   if (TFI->hasBP(MF))
     markSuperRegs(Reserved, RISCVABI::getBPReg()); // bp
+
+  // When signing the return address, we need to reserve x31 as a register
+  // to store the pointer authentication code.
+  if (shouldReservePACRegister(MF))
+    markSuperRegs(Reserved, RISCV::X31);
   assert(checkAllSuperRegsMarked(Reserved));
   return Reserved;
 }

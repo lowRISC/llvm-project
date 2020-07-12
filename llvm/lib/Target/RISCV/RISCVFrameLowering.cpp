@@ -117,6 +117,29 @@ getRestoreLibCallName(const MachineFunction &MF,
   return RestoreLibCalls[LibCallID];
 }
 
+static bool shouldSignReturnAddress(const MachineFunction &MF) {
+  // The function should be signed in the following situations:
+  // - sign-return-address=all and RV32
+  // - sign-return-address=non-leaf and the functions spills the
+  //   X1(return address) and RV32
+
+  RISCVSubtarget::SignReturnAddress attr = RISCVSubtarget::checkSignReturnAddress(MF);
+
+  if (attr == RISCVSubtarget::NONE)
+    return false;
+
+  if (attr == RISCVSubtarget::ALL)
+    return true;
+
+  assert(attr == RISCVSubtarget::NON_LEAF && "Expected all, none or non-leaf");
+
+  for (const auto &Info : MF.getFrameInfo().getCalleeSavedInfo())
+    if (Info.getReg() == RISCV::X1) // Return address register
+      return true;
+
+  return false;
+}
+
 bool RISCVFrameLowering::hasFP(const MachineFunction &MF) const {
   const TargetRegisterInfo *RegInfo = MF.getSubtarget().getRegisterInfo();
 
@@ -264,6 +287,16 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
   uint64_t StackSize = MFI.getStackSize();
   uint64_t RealStackSize = StackSize + RVFI->getLibCallStackSize();
 
+  // Using the stack pointer as the context, generate pointer authentication
+  // code for the return address and store it to X31. We need to generate
+  // the pointer authentication code and translate the return address into
+  // an incorrect address before the return address is saved in memory.
+  if (shouldSignReturnAddress(MF)) {
+    MBB.addLiveIn(RISCV::X31);
+    BuildMI(MBB, MBBI, DL, TII->get(RISCV::PAC), RISCV::X31)
+        .addReg(RISCV::X1, RegState::Define).addReg(RISCV::X1).addReg(SPReg);
+  }
+
   // Early exit if there is no need to allocate on the stack
   if (RealStackSize == 0 && !MFI.adjustsStack())
     return;
@@ -393,6 +426,7 @@ void RISCVFrameLowering::emitPrologue(MachineFunction &MF,
 void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
                                       MachineBasicBlock &MBB) const {
   const RISCVRegisterInfo *RI = STI.getRegisterInfo();
+  const RISCVInstrInfo *TII = STI.getInstrInfo();
   MachineFrameInfo &MFI = MF.getFrameInfo();
   auto *RVFI = MF.getInfo<RISCVMachineFunctionInfo>();
   Register FPReg = getFPReg(STI);
@@ -457,6 +491,15 @@ void RISCVFrameLowering::emitEpilogue(MachineFunction &MF,
 
   // Deallocate stack
   adjustReg(MBB, MBBI, DL, SPReg, SPReg, StackSize, MachineInstr::FrameDestroy);
+
+  // Verify the value of the return address stored in X1, using the stack
+  // pointer as context and the pointer authentication code in X31. We need
+  // to verify the return address and (if successful) return it to the
+  // correct value before executing ret instruction.
+  if (shouldSignReturnAddress(MF)) {
+    BuildMI(MBB, MBBI, DL, TII->get(RISCV::AUT), RISCV::X1)
+        .addReg(RISCV::X1).addReg(RISCV::X31).addReg(SPReg);
+  }
 }
 
 int RISCVFrameLowering::getFrameIndexReference(const MachineFunction &MF,

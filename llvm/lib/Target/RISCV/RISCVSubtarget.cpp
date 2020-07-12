@@ -77,3 +77,27 @@ const LegalizerInfo *RISCVSubtarget::getLegalizerInfo() const {
 const RegisterBankInfo *RISCVSubtarget::getRegBankInfo() const {
   return RegBankInfo.get();
 }
+
+RISCVSubtarget::SignReturnAddress RISCVSubtarget::checkSignReturnAddress(const MachineFunction &MF) {
+  const Function &F = MF.getFunction();
+  if (!F.hasFnAttribute("sign-return-address"))
+    return NONE;
+
+  StringRef Scope = F.getFnAttribute("sign-return-address").getValueAsString();
+  if (Scope.equals("none"))
+      return NONE;
+
+  // Only 32bit RISCV is supported
+  auto &Subtarget = MF.getSubtarget<RISCVSubtarget>();
+  if (Subtarget.getTargetABI() != RISCVABI::ABI_ILP32)
+    llvm_unreachable("Unsupported ABI");
+
+  if (Scope.equals("all"))
+    return ALL;
+
+  if (Scope.equals("non-leaf"))
+    return NON_LEAF;
+
+  assert("Expected all, none or non-leaf");
+  return NONE;
+}

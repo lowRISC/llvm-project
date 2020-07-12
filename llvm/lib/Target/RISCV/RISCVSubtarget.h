@@ -135,6 +135,14 @@ public:
   InstructionSelector *getInstructionSelector() const override;
   const LegalizerInfo *getLegalizerInfo() const override;
   const RegisterBankInfo *getRegBankInfo() const override;
+
+  enum SignReturnAddress {
+    ALL,
+    NON_LEAF,
+    NONE
+  };
+
+  static SignReturnAddress checkSignReturnAddress(const MachineFunction &MF);
 };
 } // End llvm namespace
 
