@@ -999,7 +999,7 @@ RISCVTargetLowering::RISCVTargetLowering(const TargetMachine &TM,
   setMinFunctionAlignment(FunctionAlignment);
   setPrefFunctionAlignment(FunctionAlignment);
 
-  setMinimumJumpTableEntries(5);
+  setMinimumJumpTableEntries(isEPIC() ? INT_MAX : 5);
 
   // Jumps are expensive, compared to logic
   setJumpIsExpensive();
@@ -4385,7 +4385,7 @@ SDValue RISCVTargetLowering::getAddr(NodeTy *N, SelectionDAG &DAG,
   // they should be accessed via the GOT, since the tagged address of a global
   // is incompatible with existing code models. This also applies to non-pic
   // mode.
-  if (isPositionIndependent() || Subtarget.allowTaggedGlobals()) {
+  if (isPositionIndependent() || Subtarget.allowTaggedGlobals() || isEPIC()) {
     SDValue Addr = getTargetNode(N, DL, Ty, DAG, 0);
     if (IsLocal && !Subtarget.allowTaggedGlobals())
       // Use PC-relative addressing to access the symbol. This generates the
@@ -4429,11 +4429,39 @@ SDValue RISCVTargetLowering::getAddr(NodeTy *N, SelectionDAG &DAG,
   }
 }
 
+bool RISCVTargetLowering::isEPIC() const {
+  return getTargetMachine().getRelocationModel() == Reloc::EPIC;
+}
+
+// We use the PseudoLLA instruction (LLA ISD node) during instruction selection
+// for addresses that we know are always PC-relative, even in ePIC. That avoids
+// relying on an optimized linker rewrite that removes the extraneous NOP from
+// ePIC code sequences. Therefore, we consider things like function addresses
+// as local. In pure assembly parsing LLA would expand to the ePIC sequence but
+// in instruction selection we leave it as doing PC-relative addressing.
+bool RISCVTargetLowering::isLocalGlobalValue(const GlobalValue *GV) const {
+  if (isEPIC()) {
+    if (const auto *GA = dyn_cast<GlobalAlias>(GV)) {
+      if (!(GV = GA->getAliaseeObject()))
+        return false;
+    }
+    if (const auto *GIFunc = dyn_cast<GlobalIFunc>(GV)) {
+      report_fatal_error("ifunc not supported for ePIC");
+    }
+    return isa<Function>(GV);
+  } else {
+    return getTargetMachine().shouldAssumeDSOLocal(*GV->getParent(), GV);
+  }
+}
+
 SDValue RISCVTargetLowering::lowerGlobalAddress(SDValue Op,
                                                 SelectionDAG &DAG) const {
   GlobalAddressSDNode *N = cast<GlobalAddressSDNode>(Op);
   assert(N->getOffset() == 0 && "unexpected offset in global node");
-  return getAddr(N, DAG, N->getGlobal()->isDSOLocal());
+  const GlobalValue *GV = N->getGlobal();
+  bool IsLocal = isLocalGlobalValue(GV);
+  return getAddr(N, DAG, IsLocal);
+  // return getAddr(N, DAG, IsLocal, GV->hasExternalWeakLinkage());
 }
 
 SDValue RISCVTargetLowering::lowerBlockAddress(SDValue Op,
@@ -13035,7 +13063,7 @@ SDValue RISCVTargetLowering::LowerCall(CallLoweringInfo &CLI,
     const GlobalValue *GV = S->getGlobal();
 
     unsigned OpFlags = RISCVII::MO_CALL;
-    if (!getTargetMachine().shouldAssumeDSOLocal(*GV->getParent(), GV))
+    if (!isLocalGlobalValue(GV))
       OpFlags = RISCVII::MO_PLT;
 
     Callee = DAG.getTargetGlobalAddress(GV, DL, PtrVT, 0, OpFlags);

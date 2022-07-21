@@ -61,6 +61,10 @@ public:
                       SmallVectorImpl<MCFixup> &Fixups,
                       const MCSubtargetInfo &STI) const;
 
+  void expandAddGPRel(const MCInst &MI, raw_ostream &OS,
+                      SmallVectorImpl<MCFixup> &Fixups,
+                      const MCSubtargetInfo &STI) const;
+
   /// TableGen'erated function for getting the binary encoding for an
   /// instruction.
   uint64_t getBinaryCodeForInstr(const MCInst &MI,
@@ -179,7 +183,43 @@ void RISCVMCCodeEmitter::expandAddTPRel(const MCInst &MI, raw_ostream &OS,
   support::endian::write(OS, Binary, support::little);
 }
 
-void RISCVMCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
+// Expand PseudoAddGPRel to a simple ADD with the correct relocation.
+void RISCVMCCodeEmitter::expandAddGPRel(const MCInst &MI,
+                                        raw_ostream &OS,
+                                        SmallVectorImpl<MCFixup> &Fixups,
+                                        const MCSubtargetInfo &STI) const {
+  MCOperand DestReg = MI.getOperand(0);
+  MCOperand GPReg = MI.getOperand(1);
+  MCOperand SrcReg = MI.getOperand(2);
+  assert(GPReg.isReg() && GPReg.getReg() == RISCV::X3 &&
+         "Expected global pointer as first input to GP-relative add");
+
+  MCOperand SrcSymbol = MI.getOperand(3);
+  assert(SrcSymbol.isExpr() &&
+         "Expected expression as third input to GP-relative add");
+
+  const RISCVMCExpr *Expr = dyn_cast<RISCVMCExpr>(SrcSymbol.getExpr());
+  assert(
+      Expr &&
+      (Expr->getKind() == RISCVMCExpr::VK_RISCV_GPREL_ADD ||
+       Expr->getKind() == RISCVMCExpr::VK_RISCV_EPIC_BASE_ADD) &&
+      "Expected gprel_add or epic_base_add relocation on symbol");
+
+  // Emit the correct gprel_add relocation for the symbol.
+  Fixups.push_back(MCFixup::create(
+      0, Expr, MCFixupKind(RISCV::fixup_riscv_epic_base_add), MI.getLoc()));
+
+  // Emit a normal ADD instruction with the given operands.
+  MCInst TmpInst = MCInstBuilder(RISCV::ADD)
+                       .addOperand(DestReg)
+                       .addOperand(GPReg)
+                       .addOperand(SrcReg);
+  uint32_t Binary = getBinaryCodeForInstr(TmpInst, Fixups, STI);
+  support::endian::write(OS, Binary, support::little);
+}
+
+void RISCVMCCodeEmitter::encodeInstruction(const MCInst &MI,
+                                           raw_ostream &OS,
                                            SmallVectorImpl<MCFixup> &Fixups,
                                            const MCSubtargetInfo &STI) const {
   const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
@@ -200,6 +240,12 @@ void RISCVMCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
 
   if (MI.getOpcode() == RISCV::PseudoAddTPRel) {
     expandAddTPRel(MI, OS, Fixups, STI);
+    MCNumEmitted += 1;
+    return;
+  }
+
+  if (MI.getOpcode() == RISCV::PseudoAddGPRel) {
+    expandAddGPRel(MI, OS, Fixups, STI);
     MCNumEmitted += 1;
     return;
   }
@@ -315,6 +361,36 @@ unsigned RISCVMCCodeEmitter::getImmOpValue(const MCInst &MI, unsigned OpNo,
       break;
     case RISCVMCExpr::VK_RISCV_GOT_HI:
       FixupKind = RISCV::fixup_riscv_got_hi20;
+      break;
+    case RISCVMCExpr::VK_RISCV_GPREL_HI:
+      FixupKind = RISCV::fixup_riscv_gprel_hi20;
+      break;
+    case RISCVMCExpr::VK_RISCV_GPREL_LO:
+      if (MIFrm == RISCVII::InstFormatI)
+        FixupKind = RISCV::fixup_riscv_gprel_lo12_i;
+      else if (MIFrm == RISCVII::InstFormatS)
+        FixupKind = RISCV::fixup_riscv_gprel_lo12_s;
+      else
+        llvm_unreachable(
+            "VK_RISCV_GPREL_LO used with unexpected instruction format");
+      break;
+    case RISCVMCExpr::VK_RISCV_GPREL_ADD:
+      FixupKind = RISCV::fixup_riscv_gprel_add;
+      break;
+    case RISCVMCExpr::VK_RISCV_EPIC_HI:
+      FixupKind = RISCV::fixup_riscv_epic_hi20;
+      break;
+    case RISCVMCExpr::VK_RISCV_EPIC_LO:
+      if (MIFrm == RISCVII::InstFormatI)
+        FixupKind = RISCV::fixup_riscv_epic_lo12_i;
+      else if (MIFrm == RISCVII::InstFormatS)
+        FixupKind = RISCV::fixup_riscv_epic_lo12_s;
+      else
+        llvm_unreachable(
+            "VK_RISCV_EPIC_LO used with unexpected instruction format");
+      break;
+    case RISCVMCExpr::VK_RISCV_EPIC_BASE_ADD:
+      FixupKind = RISCV::fixup_riscv_epic_base_add;
       break;
     case RISCVMCExpr::VK_RISCV_TPREL_LO:
       if (MIFrm == RISCVII::InstFormatI)

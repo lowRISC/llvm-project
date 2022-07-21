@@ -255,6 +255,9 @@ private:
   bool expandMBB(MachineBasicBlock &MBB);
   bool expandMI(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
                 MachineBasicBlock::iterator &NextMBBI);
+  bool expandEpicAddress(MachineBasicBlock &MBB,
+                          MachineBasicBlock::iterator MBBI,
+                          MachineBasicBlock::iterator &NextMBBI);
   bool expandAuipcInstPair(MachineBasicBlock &MBB,
                            MachineBasicBlock::iterator MBBI,
                            MachineBasicBlock::iterator &NextMBBI,
@@ -313,6 +316,39 @@ bool RISCVPreRAExpandPseudo::expandMI(MachineBasicBlock &MBB,
   return false;
 }
 
+bool RISCVPreRAExpandPseudo::expandEpicAddress(
+    MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
+    MachineBasicBlock::iterator &NextMBBI) {
+  MachineFunction *MF = MBB.getParent();
+  MachineInstr &MI = *MBBI;
+  DebugLoc DL = MI.getDebugLoc();
+
+  Register DestReg = MI.getOperand(0).getReg();
+  Register ScratchReg1 =
+      MF->getRegInfo().createVirtualRegister(&RISCV::GPRRegClass);
+  Register ScratchReg2 =
+      MF->getRegInfo().createVirtualRegister(&RISCV::GPRRegClass);
+
+  MachineOperand &Symbol = MI.getOperand(1);
+  MCSymbol *EPICSymbol = MF->getContext().createNamedTempSymbol("epic_hi");
+
+  MachineInstr *MILUI =
+      BuildMI(MBB, MBBI, DL, TII->get(RISCV::LUI), ScratchReg1)
+      .addDisp(Symbol, 0, RISCVII::MO_EPIC_HI);
+  MILUI->setPreInstrSymbol(*MF, EPICSymbol);
+
+  BuildMI(MBB, MBBI, DL, TII->get(RISCV::PseudoAddGPRel), ScratchReg2)
+      .addReg(RISCV::X3)
+      .addReg(ScratchReg1)
+      .addDisp(Symbol, 0, RISCVII::MO_EPIC_BASE_ADD);
+  BuildMI(MBB, MBBI, DL, TII->get(RISCV::ADDI), DestReg)
+      .addReg(ScratchReg2)
+      .addSym(EPICSymbol, RISCVII::MO_EPIC_LO);
+
+  MI.eraseFromParent();
+  return true;
+}
+
 bool RISCVPreRAExpandPseudo::expandAuipcInstPair(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
     MachineBasicBlock::iterator &NextMBBI, unsigned FlagsHi,
@@ -356,7 +392,9 @@ bool RISCVPreRAExpandPseudo::expandLoadAddress(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
     MachineBasicBlock::iterator &NextMBBI) {
   MachineFunction *MF = MBB.getParent();
-
+  bool IsEPIC = MF->getTarget().getRelocationModel() == Reloc::EPIC;
+  if (IsEPIC)
+    return expandEpicAddress(MBB, MBBI, NextMBBI);
   const auto &STI = MF->getSubtarget<RISCVSubtarget>();
   // When HWASAN is used and tagging of global variables is enabled
   // they should be accessed via the GOT, since the tagged address of a global

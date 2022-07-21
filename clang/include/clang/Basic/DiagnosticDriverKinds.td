@@ -503,7 +503,7 @@ def warn_slash_u_filename : Warning<"'/U%0' treated as the '/U' option">,
 def note_use_dashdash : Note<
   "use '--' to treat subsequent arguments as filenames">;
 
-def err_drv_ropi_rwpi_incompatible_with_pic : Error<
+def err_drv_epic_ropi_rwpi_incompatible_with_pic : Error<
   "embedded and GOT-based position independence are incompatible">;
 def err_drv_ropi_incompatible_with_cxx : Error<
   "ROPI is not compatible with c++">;

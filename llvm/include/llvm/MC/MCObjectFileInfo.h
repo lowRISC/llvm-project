@@ -239,7 +239,7 @@ protected:
 
 public:
   void initMCObjectFileInfo(MCContext &MCCtx, bool PIC,
-                            bool LargeCodeModel = false);
+                            bool LargeCodeModel = false, bool EPIC = false);
   virtual ~MCObjectFileInfo();
   MCContext &getContext() const { return *Ctx; }
 
@@ -437,6 +437,9 @@ public:
   MCSection *getEHFrameSection() const { return EHFrameSection; }
 
   bool isPositionIndependent() const { return PositionIndependent; }
+  bool isEmbeddedPositionIndependent() const {
+    return EmbeddedPositionIndependent;
+  }
 
   // Swift5 Reflection Data Sections
   MCSection *getSwift5ReflectionSection(
@@ -449,13 +452,14 @@ public:
 
 private:
   bool PositionIndependent = false;
+  bool EmbeddedPositionIndependent = false;
   MCContext *Ctx = nullptr;
   VersionTuple SDKVersion;
   std::optional<Triple> DarwinTargetVariantTriple;
   VersionTuple DarwinTargetVariantSDKVersion;
 
   void initMachOMCObjectFileInfo(const Triple &T);
-  void initELFMCObjectFileInfo(const Triple &T, bool Large);
+  void initELFMCObjectFileInfo(const Triple &T, bool Large, bool EPIC);
   void initGOFFMCObjectFileInfo(const Triple &T);
   void initCOFFMCObjectFileInfo(const Triple &T);
   void initSPIRVMCObjectFileInfo(const Triple &T);

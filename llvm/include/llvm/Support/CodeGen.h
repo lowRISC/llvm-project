@@ -22,7 +22,7 @@ namespace llvm {
   // Relocation model types.
   namespace Reloc {
     // Cannot be named PIC due to collision with -DPIC
-    enum Model { Static, PIC_, DynamicNoPIC, ROPI, RWPI, ROPI_RWPI };
+    enum Model { Static, PIC_, DynamicNoPIC, EPIC, ROPI, RWPI, ROPI_RWPI };
   }
 
   // Code model types.

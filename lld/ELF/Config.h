@@ -226,6 +226,7 @@ struct Config {
   bool ltoEmitAsm;
   bool ltoUniqueBasicBlockSectionNames;
   bool ltoWholeProgramVisibility;
+  bool ltoEpic;
   bool mergeArmExidx;
   bool mipsN32Abi = false;
   bool mmapOutputFile;

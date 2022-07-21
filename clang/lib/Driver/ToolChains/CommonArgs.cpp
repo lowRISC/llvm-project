@@ -1341,6 +1341,8 @@ const char *tools::RelocationModelName(llvm::Reloc::Model Model) {
     return "pic";
   case llvm::Reloc::DynamicNoPIC:
     return "dynamic-no-pic";
+  case llvm::Reloc::EPIC:
+    return "epic";
   case llvm::Reloc::ROPI:
     return "ropi";
   case llvm::Reloc::RWPI:
@@ -1498,30 +1500,40 @@ tools::ParsePICArgs(const ToolChain &ToolChain, const ArgList &Args) {
     return std::make_tuple(llvm::Reloc::DynamicNoPIC, PIC ? 2U : 0U, false);
   }
 
-  bool EmbeddedPISupported;
+  bool EPIC = false;
+  Arg* LastEPICArg = Args.getLastArg(options::OPT_fepic, options::OPT_fno_epic);
+  if (LastEPICArg && LastEPICArg->getOption().matches(options::OPT_fepic)) {
+    auto Arch = Triple.getArch();
+    if (Arch != llvm::Triple::riscv32 && Arch != llvm::Triple::riscv64)
+      ToolChain.getDriver().Diag(diag::err_drv_unsupported_opt_for_target)
+          << LastEPICArg->getSpelling() << Triple.str();
+    EPIC = true;
+  }
+
+  bool RORWPISupported;
   switch (Triple.getArch()) {
     case llvm::Triple::arm:
     case llvm::Triple::armeb:
     case llvm::Triple::thumb:
     case llvm::Triple::thumbeb:
-      EmbeddedPISupported = true;
+      RORWPISupported = true;
       break;
     default:
-      EmbeddedPISupported = false;
+      RORWPISupported = false;
       break;
   }
 
   bool ROPI = false, RWPI = false;
   Arg* LastROPIArg = Args.getLastArg(options::OPT_fropi, options::OPT_fno_ropi);
   if (LastROPIArg && LastROPIArg->getOption().matches(options::OPT_fropi)) {
-    if (!EmbeddedPISupported)
+    if (!RORWPISupported)
       ToolChain.getDriver().Diag(diag::err_drv_unsupported_opt_for_target)
           << LastROPIArg->getSpelling() << Triple.str();
     ROPI = true;
   }
   Arg *LastRWPIArg = Args.getLastArg(options::OPT_frwpi, options::OPT_fno_rwpi);
   if (LastRWPIArg && LastRWPIArg->getOption().matches(options::OPT_frwpi)) {
-    if (!EmbeddedPISupported)
+    if (!RORWPISupported)
       ToolChain.getDriver().Diag(diag::err_drv_unsupported_opt_for_target)
           << LastRWPIArg->getSpelling() << Triple.str();
     RWPI = true;
@@ -1529,7 +1541,7 @@ tools::ParsePICArgs(const ToolChain &ToolChain, const ArgList &Args) {
 
   // ROPI and RWPI are not compatible with PIC or PIE.
   if ((ROPI || RWPI) && (PIC || PIE))
-    ToolChain.getDriver().Diag(diag::err_drv_ropi_rwpi_incompatible_with_pic);
+    ToolChain.getDriver().Diag(diag::err_drv_epic_ropi_rwpi_incompatible_with_pic);
 
   if (Triple.isMIPS()) {
     StringRef CPUName;
@@ -1552,7 +1564,9 @@ tools::ParsePICArgs(const ToolChain &ToolChain, const ArgList &Args) {
     return std::make_tuple(llvm::Reloc::PIC_, IsPICLevelTwo ? 2U : 1U, PIE);
 
   llvm::Reloc::Model RelocM = llvm::Reloc::Static;
-  if (ROPI && RWPI)
+  if (EPIC)
+    RelocM = llvm::Reloc::EPIC;
+  else if (ROPI && RWPI)
     RelocM = llvm::Reloc::ROPI_RWPI;
   else if (ROPI)
     RelocM = llvm::Reloc::ROPI;

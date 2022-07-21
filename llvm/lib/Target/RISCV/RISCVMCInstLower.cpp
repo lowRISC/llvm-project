@@ -73,6 +73,15 @@ static MCOperand lowerSymbolOperand(const MachineOperand &MO, MCSymbol *Sym,
   case RISCVII::MO_TLS_GD_HI:
     Kind = RISCVMCExpr::VK_RISCV_TLS_GD_HI;
     break;
+  case RISCVII::MO_EPIC_HI:
+    Kind = RISCVMCExpr::VK_RISCV_EPIC_HI;
+    break;
+  case RISCVII::MO_EPIC_LO:
+    Kind = RISCVMCExpr::VK_RISCV_EPIC_LO;
+    break;
+  case RISCVII::MO_EPIC_BASE_ADD:
+    Kind = RISCVMCExpr::VK_RISCV_EPIC_BASE_ADD;
+    break;
   }
 
   const MCExpr *ME =

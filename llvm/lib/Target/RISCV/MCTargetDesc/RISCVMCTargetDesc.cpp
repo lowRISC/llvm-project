@@ -70,9 +70,9 @@ static MCAsmInfo *createRISCVMCAsmInfo(const MCRegisterInfo &MRI,
 
 static MCObjectFileInfo *
 createRISCVMCObjectFileInfo(MCContext &Ctx, bool PIC,
-                            bool LargeCodeModel = false) {
+                            bool LargeCodeModel = false, bool EPIC = false) {
   MCObjectFileInfo *MOFI = new RISCVMCObjectFileInfo();
-  MOFI->initMCObjectFileInfo(Ctx, PIC, LargeCodeModel);
+  MOFI->initMCObjectFileInfo(Ctx, PIC, LargeCodeModel, EPIC);
   return MOFI;
 }
 

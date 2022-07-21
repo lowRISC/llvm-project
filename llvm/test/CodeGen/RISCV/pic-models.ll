@@ -3,10 +3,14 @@
 ; RUN:     | FileCheck -check-prefix=RV32-STATIC %s
 ; RUN: llc -mtriple=riscv32 -relocation-model=pic < %s \
 ; RUN:     | FileCheck -check-prefix=RV32-PIC %s
+; RUN: llc -mtriple=riscv32 -relocation-model=epic < %s \
+; RUN:     | FileCheck -check-prefix=RV32-EPIC %s
 ; RUN: llc -mtriple=riscv64 -relocation-model=static < %s \
 ; RUN:     | FileCheck -check-prefix=RV64-STATIC %s
 ; RUN: llc -mtriple=riscv64 -relocation-model=pic < %s \
 ; RUN:     | FileCheck -check-prefix=RV64-PIC %s
+; RUN: llc -mtriple=riscv64 -relocation-model=epic < %s \
+; RUN:     | FileCheck -check-prefix=RV64-EPIC %s
 
 ; Check basic lowering of PIC addressing.
 ; TODO: Check other relocation models?
@@ -31,6 +35,14 @@ define ptr @f1() nounwind {
 ; RV32-PIC-NEXT:    lw a0, %pcrel_lo(.Lpcrel_hi0)(a0)
 ; RV32-PIC-NEXT:    ret
 ;
+; RV32-EPIC-LABEL: f1:
+; RV32-EPIC:       # %bb.0: # %entry
+; RV32-EPIC-NEXT:  .Lepic_hi0:
+; RV32-EPIC-NEXT:    lui a0, %epic_hi(external_var)
+; RV32-EPIC-NEXT:    add a0, gp, a0, %epic_base_add(external_var)
+; RV32-EPIC-NEXT:    addi a0, a0, %epic_lo(.Lepic_hi0)
+; RV32-EPIC-NEXT:    ret
+;
 ; RV64-STATIC-LABEL: f1:
 ; RV64-STATIC:       # %bb.0: # %entry
 ; RV64-STATIC-NEXT:    lui a0, %hi(external_var)
@@ -43,6 +55,14 @@ define ptr @f1() nounwind {
 ; RV64-PIC-NEXT:    auipc a0, %got_pcrel_hi(external_var)
 ; RV64-PIC-NEXT:    ld a0, %pcrel_lo(.Lpcrel_hi0)(a0)
 ; RV64-PIC-NEXT:    ret
+;
+; RV64-EPIC-LABEL: f1:
+; RV64-EPIC:       # %bb.0: # %entry
+; RV64-EPIC-NEXT:  .Lepic_hi0:
+; RV64-EPIC-NEXT:    lui a0, %epic_hi(external_var)
+; RV64-EPIC-NEXT:    add a0, gp, a0, %epic_base_add(external_var)
+; RV64-EPIC-NEXT:    addi a0, a0, %epic_lo(.Lepic_hi0)
+; RV64-EPIC-NEXT:    ret
 entry:
   ret ptr @external_var
 }
@@ -64,6 +84,14 @@ define ptr @f2() nounwind {
 ; RV32-PIC-NEXT:    addi a0, a0, %pcrel_lo(.Lpcrel_hi1)
 ; RV32-PIC-NEXT:    ret
 ;
+; RV32-EPIC-LABEL: f2:
+; RV32-EPIC:       # %bb.0: # %entry
+; RV32-EPIC-NEXT:  .Lepic_hi1:
+; RV32-EPIC-NEXT:    lui a0, %epic_hi(internal_var)
+; RV32-EPIC-NEXT:    add a0, gp, a0, %epic_base_add(internal_var)
+; RV32-EPIC-NEXT:    addi a0, a0, %epic_lo(.Lepic_hi1)
+; RV32-EPIC-NEXT:    ret
+;
 ; RV64-STATIC-LABEL: f2:
 ; RV64-STATIC:       # %bb.0: # %entry
 ; RV64-STATIC-NEXT:    lui a0, %hi(internal_var)
@@ -76,6 +104,62 @@ define ptr @f2() nounwind {
 ; RV64-PIC-NEXT:    auipc a0, %pcrel_hi(internal_var)
 ; RV64-PIC-NEXT:    addi a0, a0, %pcrel_lo(.Lpcrel_hi1)
 ; RV64-PIC-NEXT:    ret
+;
+; RV64-EPIC-LABEL: f2:
+; RV64-EPIC:       # %bb.0: # %entry
+; RV64-EPIC-NEXT:  .Lepic_hi1:
+; RV64-EPIC-NEXT:    lui a0, %epic_hi(internal_var)
+; RV64-EPIC-NEXT:    add a0, gp, a0, %epic_base_add(internal_var)
+; RV64-EPIC-NEXT:    addi a0, a0, %epic_lo(.Lepic_hi1)
+; RV64-EPIC-NEXT:    ret
 entry:
   ret ptr @internal_var
+}
+
+
+; function pointer
+
+declare void @g()
+
+define void ()* @f3() nounwind {
+; RV32-STATIC-LABEL: f3:
+; RV32-STATIC:       # %bb.0:
+; RV32-STATIC-NEXT:    lui a0, %hi(g)
+; RV32-STATIC-NEXT:    addi a0, a0, %lo(g)
+; RV32-STATIC-NEXT:    ret
+;
+; RV32-PIC-LABEL: f3:
+; RV32-PIC:       # %bb.0:
+; RV32-PIC-NEXT:  .Lpcrel_hi2:
+; RV32-PIC-NEXT:    auipc a0, %got_pcrel_hi(g)
+; RV32-PIC-NEXT:    lw a0, %pcrel_lo(.Lpcrel_hi2)(a0)
+; RV32-PIC-NEXT:    ret
+;
+; RV32-EPIC-LABEL: f3:
+; RV32-EPIC:       # %bb.0:
+; RV32-EPIC-NEXT:  .Lpcrel_hi0:
+; RV32-EPIC-NEXT:    auipc a0, %pcrel_hi(g)
+; RV32-EPIC-NEXT:    addi a0, a0, %pcrel_lo(.Lpcrel_hi0)
+; RV32-EPIC-NEXT:    ret
+;
+; RV64-STATIC-LABEL: f3:
+; RV64-STATIC:       # %bb.0:
+; RV64-STATIC-NEXT:    lui a0, %hi(g)
+; RV64-STATIC-NEXT:    addi a0, a0, %lo(g)
+; RV64-STATIC-NEXT:    ret
+;
+; RV64-PIC-LABEL: f3:
+; RV64-PIC:       # %bb.0:
+; RV64-PIC-NEXT:  .Lpcrel_hi2:
+; RV64-PIC-NEXT:    auipc a0, %got_pcrel_hi(g)
+; RV64-PIC-NEXT:    ld a0, %pcrel_lo(.Lpcrel_hi2)(a0)
+; RV64-PIC-NEXT:    ret
+;
+; RV64-EPIC-LABEL: f3:
+; RV64-EPIC:       # %bb.0:
+; RV64-EPIC-NEXT:  .Lpcrel_hi0:
+; RV64-EPIC-NEXT:    auipc a0, %pcrel_hi(g)
+; RV64-EPIC-NEXT:    addi a0, a0, %pcrel_lo(.Lpcrel_hi0)
+; RV64-EPIC-NEXT:    ret
+  ret void ()* @g
 }

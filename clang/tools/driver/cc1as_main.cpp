@@ -436,12 +436,19 @@ static bool ExecuteAssemblerImpl(AssemblerInvocation &Opts,
                 &MCOptions);
 
   bool PIC = false;
+  bool EPIC = false;
   if (Opts.RelocationModel == "static") {
     PIC = false;
   } else if (Opts.RelocationModel == "pic") {
     PIC = true;
+  } else if (Opts.RelocationModel == "epic") {
+    EPIC = true;
   } else {
-    assert(Opts.RelocationModel == "dynamic-no-pic" &&
+    assert((Opts.RelocationModel == "epic" ||
+            Opts.RelocationModel == "ropi" ||
+            Opts.RelocationModel == "rwpi" ||
+            Opts.RelocationModel == "ropi-rwpi" ||
+            Opts.RelocationModel == "dynamic-no-pic") &&
            "Invalid PIC model!");
     PIC = false;
   }
@@ -449,7 +456,7 @@ static bool ExecuteAssemblerImpl(AssemblerInvocation &Opts,
   // FIXME: This is not pretty. MCContext has a ptr to MCObjectFileInfo and
   // MCObjectFileInfo needs a MCContext reference in order to initialize itself.
   std::unique_ptr<MCObjectFileInfo> MOFI(
-      TheTarget->createMCObjectFileInfo(Ctx, PIC));
+      TheTarget->createMCObjectFileInfo(Ctx, PIC, false, EPIC));
   if (Opts.DarwinTargetVariantTriple)
     MOFI->setDarwinTargetVariantTriple(*Opts.DarwinTargetVariantTriple);
   if (!Opts.DarwinTargetVariantSDKVersion.empty())

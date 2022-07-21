@@ -157,7 +157,8 @@ public:
                                            const MCTargetOptions &Options);
   using MCObjectFileInfoCtorFnTy = MCObjectFileInfo *(*)(MCContext &Ctx,
                                                          bool PIC,
-                                                         bool LargeCodeModel);
+                                                         bool LargeCodeModel,
+                                                         bool EPIC);
   using MCInstrInfoCtorFnTy = MCInstrInfo *(*)();
   using MCInstrAnalysisCtorFnTy = MCInstrAnalysis *(*)(const MCInstrInfo *Info);
   using MCRegInfoCtorFnTy = MCRegisterInfo *(*)(const Triple &TT);
@@ -220,7 +221,7 @@ public:
                       std::unique_ptr<MCAsmBackend> &&TAB,
                       std::unique_ptr<MCObjectWriter> &&OW,
                       std::unique_ptr<MCCodeEmitter> &&Emitter, bool RelaxAll);
-  
+
   using DXContainerStreamerCtorTy =
       MCStreamer *(*)(const Triple &T, MCContext &Ctx,
                       std::unique_ptr<MCAsmBackend> &&TAB,
@@ -422,13 +423,14 @@ public:
   /// triple.
   ///
   MCObjectFileInfo *createMCObjectFileInfo(MCContext &Ctx, bool PIC,
-                                           bool LargeCodeModel = false) const {
+                                           bool LargeCodeModel = false,
+                                           bool EPIC = false) const {
     if (!MCObjectFileInfoCtorFn) {
       MCObjectFileInfo *MOFI = new MCObjectFileInfo();
-      MOFI->initMCObjectFileInfo(Ctx, PIC, LargeCodeModel);
+      MOFI->initMCObjectFileInfo(Ctx, PIC, LargeCodeModel, EPIC);
       return MOFI;
     }
-    return MCObjectFileInfoCtorFn(Ctx, PIC, LargeCodeModel);
+    return MCObjectFileInfoCtorFn(Ctx, PIC, LargeCodeModel, EPIC);
   }
 
   /// createMCInstrInfo - Create a MCInstrInfo implementation.
@@ -1194,8 +1196,9 @@ template <class MCObjectFileInfoImpl> struct RegisterMCObjectFileInfo {
 
 private:
   static MCObjectFileInfo *Allocator(MCContext &Ctx, bool PIC,
-                                     bool LargeCodeModel = false) {
-    return new MCObjectFileInfoImpl(Ctx, PIC, LargeCodeModel);
+                                     bool LargeCodeModel = false,
+                                     bool EPIC = false) {
+    return new MCObjectFileInfoImpl(Ctx, PIC, LargeCodeModel, EPIC);
   }
 };
 

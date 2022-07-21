@@ -135,6 +135,9 @@ codegen::RegisterCodeGenFlags::RegisterCodeGenFlags() {
           clEnumValN(Reloc::DynamicNoPIC, "dynamic-no-pic",
                      "Relocatable external references, non-relocatable code"),
           clEnumValN(
+              Reloc::EPIC, "epic",
+              "Position independent code for embedded systems"),
+          clEnumValN(
               Reloc::ROPI, "ropi",
               "Code and read-only data relocatable, accessed PC-relative"),
           clEnumValN(

@@ -86,6 +86,9 @@ void JITTargetMachineBuilderPrinter::print(raw_ostream &OS) const {
     case Reloc::PIC_:
       OS << "PIC_";
       break;
+    case Reloc::EPIC:
+      OS << "EPIC";
+      break;
     case Reloc::DynamicNoPIC:
       OS << "DynamicNoPIC";
       break;

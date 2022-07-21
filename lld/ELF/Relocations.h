@@ -73,6 +73,7 @@ enum RelExpr {
   R_TLSLD_GOT_OFF,
   R_TLSLD_HINT,
   R_TLSLD_PC,
+  R_EPIC,
 
   // The following is abstract relocation types used for only one target.
   //

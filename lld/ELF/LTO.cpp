@@ -118,6 +118,8 @@ static lto::Config createConfig() {
     c.RelocModel = std::nullopt;
   else if (config->isPic)
     c.RelocModel = Reloc::PIC_;
+  else if (config->ltoEpic)
+    c.RelocModel = Reloc::EPIC;
   else
     c.RelocModel = Reloc::Static;
 
