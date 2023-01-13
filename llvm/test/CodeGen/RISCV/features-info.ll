@@ -59,6 +59,7 @@
 ; CHECK-NEXT:   experimental-zvqdotq             - 'Zvqdotq' (Vector quad widening 4D Dot Product).
 ; CHECK-NEXT:   f                                - 'F' (Single-Precision Floating-Point).
 ; CHECK-NEXT:   forced-atomics                   - Assume that lock-free native-width atomics are available.
+; CHECK-NEXT:   guards                           - Jump guards hardening.
 ; CHECK-NEXT:   h                                - 'H' (Hypervisor).
 ; CHECK-NEXT:   i                                - 'I' (Base Integer Instruction Set).
 ; CHECK-NEXT:   ld-add-fusion                    - Enable LD+ADD macrofusion.

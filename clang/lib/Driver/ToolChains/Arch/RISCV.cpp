@@ -176,6 +176,11 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
     Features.push_back("+unaligned-vector-mem");
   }
 
+  if (Args.hasFlag(options::OPT_mguards, options::OPT_mno_guards, false))
+    Features.push_back("+guards");
+  else
+    Features.push_back("-guards");
+
   // Now add any that the user explicitly requested on the command line,
   // which may override the defaults.
   handleTargetFeaturesGroup(D, Triple, Args, Features,

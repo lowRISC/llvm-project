@@ -212,6 +212,8 @@
 ; CHECK-NEXT:       RISC-V Zcmp move merging pass
 ; CHECK-NEXT:       RISC-V Zcmp Push/Pop optimization pass
 ; CHECK-NEXT:       RISC-V pseudo instruction expansion pass
+; CHECK-NEXT:       RISCV Jump Guards Hardening
+; CHECK-NEXT:       Branch relaxation pass
 ; CHECK-NEXT:       RISC-V atomic pseudo instruction expansion pass
 ; CHECK-NEXT:       Unpack machine instruction bundles
 ; CHECK-NEXT:       Lazy Machine Block Frequency Analysis

@@ -1,0 +1,77 @@
+# RUN: llc -march=riscv32 -run-pass riscv-jump-guards -simplify-mir -verify-machineinstrs %s -o - | FileCheck %s
+
+--- |
+  define void @test_guards(i32 %i) nounwind "target-features"="+guards" {
+    ret void
+  }
+...
+---
+name: test_guards
+body: |
+  bb.0:
+    ; CHECK:      bb.0:
+    ; CHECK-NEXT:   PseudoTAIL @test_guards, implicit $x2, implicit $x10
+    ; CHECK:      bb.7:
+    ; CHECK:        GUARD_UNIMP
+    ; CHECK-NEXT:   GUARD_UNIMP
+    PseudoTAIL @test_guards, implicit $x2, implicit $x10
+
+  bb.1:
+    ; CHECK:      bb.1:
+    ; CHECK-NEXT:   $x10 = PseudoJump %bb.0
+    ; CHECK:      bb.8:
+    ; CHECK:        GUARD_UNIMP
+    ; CHECK-NEXT:   GUARD_UNIMP
+    $x10 = PseudoJump %bb.0
+
+  bb.2:
+    ; CHECK:      bb.2:
+    ; CHECK-NEXT:   PseudoRET implicit $x10
+    ; CHECK:      bb.9:
+    ; CHECK:        GUARD_UNIMP
+    ; CHECK-NEXT:   GUARD_UNIMP
+    PseudoRET implicit $x10
+
+  bb.3:
+    ; CHECK:      bb.3:
+    ; CHECK-NEXT:   PseudoBR %bb.0
+    ; CHECK:      bb.10:
+    ; CHECK:        GUARD_UNIMP
+    ; CHECK-NEXT:   GUARD_UNIMP
+    PseudoBR %bb.0
+
+  bb.4:
+    ; CHECK:      bb.4:
+    ; CHECK-NEXT:   C_J %bb.0
+    ; CHECK:      bb.11:
+    ; CHECK:        GUARD_UNIMP
+    ; CHECK-NEXT:   GUARD_UNIMP
+    C_J %bb.0
+
+  bb.5:
+    ; CHECK:      bb.5:
+    ; CHECK-NEXT:   $x1 = JALR $x1, 0
+    ; CHECK-NEXT:   $x0 = JALR $x2, 0
+    ; CHECK-NEXT:   $x0 = JALR $x1, 0
+    $x1 = JALR $x1, 0
+    $x0 = JALR $x2, 0
+    $x0 = JALR $x1, 0
+
+    ; CHECK-NEXT: C_JR $x2
+    ; CHECK-NEXT: C_JR $x1
+    ; CHECK:      bb.12:
+    ; CHECK:        GUARD_UNIMP
+    ; CHECK-NEXT:   GUARD_UNIMP
+    C_JR $x2
+    C_JR $x1
+
+  bb.6:
+    ; CHECK:      bb.6:
+    ; CHECK:        $x1 = JAL @test_guards
+    ; CHECK-NEXT:   $x0 = JAL @test_guards
+    ; CHECK:      bb.13:
+    ; CHECK-NEXT:   GUARD_UNIMP
+    ; CHECK-NEXT:   GUARD_UNIMP
+    $x1 = JAL @test_guards
+    $x0 = JAL @test_guards
+...

@@ -56,6 +56,15 @@
 // NOUWTABLE-NOT: "-funwind-tables=2"
 
 // RUN: %clang --target=riscv32-linux -### %s -fsyntax-only 2>&1 \
+// RUN: %clang -target riscv32-unknown-elf -### %s -mguards 2>&1 | FileCheck %s -check-prefix=GUARDS
+// RUN: %clang -target riscv32-unknown-elf -### %s -mno-guards 2>&1 | FileCheck %s -check-prefix=NO-GUARDS
+
+// GUARDS: "-target-feature" "+guards"
+// NO-GUARDS: "-target-feature" "-guards"
+// DEFAULT: "-target-feature" "-guards"
+// DEFAULT-NOT: "-target-feature" "+guards"
+
+// RUN: %clang -target riscv32-linux -### %s -fsyntax-only 2>&1 \
 // RUN:   | FileCheck %s -check-prefix=DEFAULT-LINUX
 // RUN: %clang --target=riscv64-linux -### %s -fsyntax-only 2>&1 \
 // RUN:   | FileCheck %s -check-prefix=DEFAULT-LINUX

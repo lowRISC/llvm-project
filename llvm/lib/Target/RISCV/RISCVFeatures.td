@@ -1856,3 +1856,10 @@ def FeatureTaggedGlobals : SubtargetFeature<"tagged-globals",
     "AllowTaggedGlobals",
     "true", "Use an instruction sequence for taking the address of a global "
     "that allows a memory tag in the upper address bits">;
+
+def FeatureGuards
+    : SubtargetFeature<"guards", "HasGuards", "true",
+                       "Jump guards hardening">;
+def HasGuards : Predicate<"Subtarget->hasGuards()">,
+                           AssemblerPredicate<(all_of FeatureGuards),
+                           "Jump guards hardening">;
