@@ -5140,6 +5140,10 @@ def mrvv_vector_bits_EQ : Joined<["-"], "mrvv-vector-bits=">, Group<m_Group>,
       !eq(GlobalDocumentation.Program, "Flang") : "",
       true: " The value will be reflected in __riscv_v_fixed_vlen preprocessor define"),
     " (RISC-V only)")>;
+def mguards : Flag<["-"], "mguards">, Group<m_riscv_Features_Group>,
+  HelpText<"Enable control flow guards">;
+def mno_guards: Flag<["-"], "mno-guards">, Group<m_riscv_Features_Group>,
+  HelpText<"Disable control flow guards">;
 
 def munaligned_access : Flag<["-"], "munaligned-access">, Group<m_Group>,
   HelpText<"Allow memory accesses to be unaligned (AArch32/MIPSr6 only)">;

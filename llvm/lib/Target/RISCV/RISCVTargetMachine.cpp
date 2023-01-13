@@ -153,6 +153,7 @@ extern "C" LLVM_ABI LLVM_EXTERNAL_VISIBILITY void LLVMInitializeRISCVTarget() {
   initializeRISCVExpandAtomicPseudoPass(*PR);
   initializeRISCVRedundantCopyEliminationPass(*PR);
   initializeRISCVAsmPrinterPass(*PR);
+  initializeRISCVJumpGuardsHardenerPass(*PR);
 }
 
 static StringRef computeDataLayout(const Triple &TT,
@@ -587,6 +588,9 @@ void RISCVPassConfig::addPreEmitPass2() {
     addPass(createRISCVPushPopOptimizationPass());
   }
   addPass(createRISCVExpandPseudoPass());
+
+  addPass(createRISCVJumpGuardsHardenerPass());
+  addPass(&BranchRelaxationPassID);
 
   // Schedule the expansion of AMOs at the last possible moment, avoiding the
   // possibility for other passes to break the requirements for forward

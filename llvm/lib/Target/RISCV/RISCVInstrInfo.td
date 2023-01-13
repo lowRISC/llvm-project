@@ -861,6 +861,13 @@ def UNIMP : RVInstI<0b001, OPC_SYSTEM, (outs), (ins), "unimp", "">,
   let imm12 = 0b110000000000;
 }
 
+let isTerminator = 1, isCodeGenOnly = 1 in
+def GUARD_UNIMP : RVInstI<0b001, OPC_SYSTEM, (outs), (ins), "unimp", "">,
+            Sched<[]> {
+  let rs1 = 0;
+  let rd = 0;
+  let imm12 = 0b110000000000;
+}
 } // hasSideEffects = 1, mayLoad = 0, mayStore = 0
 
 def CSRRW : CSR_ir<0b001, "csrrw">;
