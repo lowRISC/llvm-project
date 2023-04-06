@@ -34,7 +34,7 @@
 # CHECK: :[[#@LINE+1]]:18: error: expected comma
 .option arch, +c foo
 
-# CHECK: :[[#@LINE+1]]:16: error: extension version number parsing not currently implemented
+# CHECK: :[[#@LINE+1]]:16: error: invalid extension version number
 .option arch, +c2p0
 
 .option arch, +d
