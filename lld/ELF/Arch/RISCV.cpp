@@ -256,7 +256,7 @@ RelType RISCV::getDynRel(RelType type) const {
 static bool shouldMakePCRel(const Symbol &sym) {
   OutputSection *section = sym.getOutputSection();
   if (!section)
-    return false;
+    return true;
   return (section->flags & SHF_WRITE) == 0;
 }
 
