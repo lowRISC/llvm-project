@@ -566,6 +566,7 @@ void CodeGenModule::Release() {
   checkAliases();
   EmitDeferredUnusedCoverageMappings();
   CodeGenPGO(*this).setValueProfilingFlag(getModule());
+  CodeGenPGO(*this).setProfileVersion(getModule());
   if (CoverageMapping)
     CoverageMapping->emit();
   if (CodeGenOpts.SanitizeCfiCrossDso) {
