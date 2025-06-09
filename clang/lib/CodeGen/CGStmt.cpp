@@ -910,14 +910,25 @@ void CodeGenFunction::EmitIfStmt(const IfStmt &S) {
     // If the skipped block has no labels in it, just emit the executed block.
     // This avoids emitting dead code and simplifies the CFG substantially.
     if (S.isConstexpr() || !ContainsLabel(Skipped)) {
-      if (CondConstant)
+      if (CondConstant && !llvm::EnableSingleByteCoverage)
         incrementProfileCounter(&S);
+
       if (Executed) {
+        // When single byte coverage mode is enabled, add a counter to the
+        // executed block.
+        if (llvm::EnableSingleByteCoverage)
+          incrementProfileCounter(Executed);
         MaybeEmitDeferredVarDeclInit(S.getConditionVariable());
         RunCleanupsScope ExecutedScope(*this);
         EmitStmt(Executed);
       }
       PGO->markStmtMaybeUsed(Skipped);
+
+      // When single byte coverage mode is enabled, add a counter to
+      // continuation block.
+      if (llvm::EnableSingleByteCoverage)
+        incrementProfileCounter(&S);
+
       return;
     }
   }
