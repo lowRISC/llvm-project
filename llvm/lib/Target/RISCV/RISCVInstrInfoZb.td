@@ -458,26 +458,6 @@ def XPERM_H : ALU_rr<0b0010100, 0b110, "xperm.h">,
               Sched<[WriteXPERMH, ReadXPERMH, ReadXPERMH]>;
 } // Predicates = [HasStdExtZbp]
 
-let Predicates = [HasStdExtZbp, IsRV64] in {
-def GORCW  : ALUW_rr<0b0010100, 0b101, "gorcw">,
-             Sched<[WriteORC32, ReadORC32, ReadORC32]>;
-def GREVW  : ALUW_rr<0b0110100, 0b101, "grevw">,
-             Sched<[WriteREV32, ReadREV32, ReadREV32]>;
-
-def GORCIW : RVBShiftW_ri<0b0010100, 0b101, OPC_OP_IMM_32, "gorciw">,
-             Sched<[WriteREVImm32, ReadREVImm32]>;
-def GREVIW : RVBShiftW_ri<0b0110100, 0b101, OPC_OP_IMM_32, "greviw">,
-             Sched<[WriteORCImm32, ReadORCImm32]>;
-
-def SHFLW   : ALUW_rr<0b0000100, 0b001, "shflw">,
-              Sched<[WriteSHFL32, ReadSHFL32, ReadSHFL32]>;
-def UNSHFLW : ALUW_rr<0b0000100, 0b101, "unshflw">,
-              Sched<[WriteUNSHFL32, ReadUNSHFL32, ReadUNSHFL32]>;
-
-def XPERM_W : ALU_rr<0b0010100, 0b000, "xperm.w">,
-              Sched<[WriteXPERMW, ReadXPERMW, ReadXPERMW]>;
-} // Predicates = [HasStdExtZbp, IsRV64]
-
 // These instructions were named xperm.n and xperm.b in the last version of
 // the draft bit manipulation specification they were included in. However, we
 // use the mnemonics given to them in the ratified Zbkx extension.
@@ -501,18 +481,6 @@ def FSRI : RVBTernaryImm6<0b101, OPC_OP_IMM, "fsri",
                           "$rd, $rs1, $rs3, $shamt">,
            Sched<[WriteFSRImm, ReadFSRImm, ReadFSRImm]>;
 } // Predicates = [HasStdExtZbt]
-
-let Predicates = [HasStdExtZbt, IsRV64] in {
-def FSLW  : RVBTernaryR<0b10, 0b001, OPC_OP_32,
-                        "fslw", "$rd, $rs1, $rs3, $rs2">,
-            Sched<[WriteFSReg32, ReadFSReg32, ReadFSReg32, ReadFSReg32]>;
-def FSRW  : RVBTernaryR<0b10, 0b101, OPC_OP_32, "fsrw",
-                        "$rd, $rs1, $rs3, $rs2">,
-            Sched<[WriteFSReg32, ReadFSReg32, ReadFSReg32, ReadFSReg32]>;
-def FSRIW : RVBTernaryImm5<0b10, 0b101, OPC_OP_IMM_32,
-                           "fsriw", "$rd, $rs1, $rs3, $shamt">,
-            Sched<[WriteFSRImm32, ReadFSRImm32, ReadFSRImm32]>;
-} // Predicates = [HasStdExtZbt, IsRV64]
 
 let Predicates = [HasStdExtZbbOrP], IsSignExtendingOpW = 1 in
 def CLZ  : Unary_r<0b011000000000, 0b001, "clz">,
@@ -557,14 +525,6 @@ def CRC32C_W : Unary_r<0b011000011010, 0b001, "crc32c.w">,
                Sched<[WriteCRCCW, ReadCRCCW]>;
 } // Predicates = [HasStdExtZbr]
 
-let Predicates = [HasStdExtZbr, IsRV64] in {
-def CRC32_D  : Unary_r<0b011000010011, 0b001, "crc32.d">,
-               Sched<[WriteCRCD, ReadCRCD]>;
-
-def CRC32C_D : Unary_r<0b011000011011, 0b001, "crc32c.d">,
-               Sched<[WriteCRCCD, ReadCRCCD]>;
-} // Predicates = [HasStdExtZbr, IsRV64]
-
 let Predicates = [HasStdExtZbc] in {
 def CLMULR : ALU_rr<0b0000101, 0b010, "clmulr", Commutable=1>,
              Sched<[WriteCLMUL, ReadCLMUL, ReadCLMUL]>;
@@ -597,15 +557,6 @@ def BCOMPRESS   : ALU_rr<0b0000100, 0b110, "bcompress">,
                   Sched<[WriteCompress, ReadCompress, ReadCompress]>;
 } // Predicates = [HasStdExtZbe]
 
-let Predicates = [HasStdExtZbe, IsRV64] in {
-// NOTE: These mnemonics are from the 0.94 spec. There is a name conflict with
-// bextw in the 0.93 spec.
-def BDECOMPRESSW : ALUW_rr<0b0100100, 0b110, "bdecompressw">,
-                   Sched<[WriteDecompress32, ReadDecompress32, ReadDecompress32]>;
-def BCOMPRESSW   : ALUW_rr<0b0000100, 0b110, "bcompressw">,
-                   Sched<[WriteCompress32, ReadCompress32, ReadCompress32]>;
-} // Predicates = [HasStdExtZbe, IsRV64]
-
 let Predicates = [HasStdExtZbpOrZbkbOrP] in
 def PACK  : ALU_rr<0b0000100, 0b100, "pack">,
             Sched<[WritePACK, ReadPACK, ReadPACK]>;
@@ -616,7 +567,7 @@ def PACKH : ALU_rr<0b0000100, 0b111, "packh">,
             Sched<[WritePACK, ReadPACK, ReadPACK]>;
 } // Predicates = [HasStdExtZbpOrZbkb]
 
-let Predicates = [HasStdExtZbpOrZbkb, IsRV64], IsSignExtendingOpW = 1 in
+let Predicates = [HasStdExtZbkb, IsRV64], IsSignExtendingOpW = 1 in
 def PACKW  : ALUW_rr<0b0000100, 0b100, "packw">,
              Sched<[WritePACK32, ReadPACK32, ReadPACK32]>;
 
@@ -629,42 +580,24 @@ let Predicates = [HasStdExtZbp] in
 def PACKU : ALU_rr<0b0100100, 0b100, "packu">,
             Sched<[WritePACKU, ReadPACKU, ReadPACKU]>;
 
-let Predicates = [HasStdExtZbp, IsRV64] in
-def PACKUW : ALUW_rr<0b0100100, 0b100, "packuw">,
-             Sched<[WritePACKU32, ReadPACKU32, ReadPACKU32]>;
-
-let Predicates = [HasStdExtZbm, IsRV64] in {
-def BMATFLIP : Unary_r<0b011000000011, 0b001, "bmatflip">,
-               Sched<[WriteBMatrix, ReadBMatrix]>;
-
-def BMATOR   : ALU_rr<0b0000100, 0b011, "bmator">,
-               Sched<[WriteBMatrix, ReadBMatrix, ReadBMatrix]>;
-def BMATXOR  : ALU_rr<0b0100100, 0b011, "bmatxor">,
-               Sched<[WriteBMatrix, ReadBMatrix, ReadBMatrix]>;
-} // Predicates = [HasStdExtZbm, IsRV64]
-
 let Predicates = [HasStdExtZbf] in
 def BFP : ALU_rr<0b0100100, 0b111, "bfp">,
           Sched<[WriteBFP, ReadBFP, ReadBFP]>;
 
-let Predicates = [HasStdExtZbf, IsRV64] in
-def BFPW : ALUW_rr<0b0100100, 0b111, "bfpw">,
-           Sched<[WriteBFP32, ReadBFP32, ReadBFP32]>;
-
-let Predicates = [HasStdExtZbbOrZbp, IsRV64], IsSignExtendingOpW = 1 in {
+let Predicates = [HasStdExtZbb, IsRV64], IsSignExtendingOpW = 1 in {
 def ZEXT_H_RV64 : RVBUnaryR<0b0000100, 0b100, OPC_OP_32, "zext.h">,
                   Sched<[WriteIALU, ReadIALU]>;
-} // Predicates = [HasStdExtZbbOrZbp, IsRV64]
+} // Predicates = [HasStdExtZbb, IsRV64]
 
 let Predicates = [HasStdExtZbbOrZbpOrZbkbOrP, IsRV32] in {
 def REV8_RV32 : Unary_r<0b011010011000, 0b101, "rev8">,
                 Sched<[WriteREV8, ReadREV8]>;
 } // Predicates = [HasStdExtZbbOrZbpOrZbkbOrP, IsRV32]
 
-let Predicates = [HasStdExtZbbOrZbpOrZbkbOrP, IsRV64] in {
+let Predicates = [HasStdExtZbbOrZbkbOrP, IsRV64] in {
 def REV8_RV64 : Unary_r<0b011010111000, 0b101, "rev8">,
                 Sched<[WriteREV8, ReadREV8]>;
-} // Predicates = [HasStdExtZbbOrZbpOrZbkbOrP, IsRV64]
+} // Predicates = [HasStdExtZbbOrZbkbOrP, IsRV64]
 
 let Predicates = [HasStdExtZbbOrZbp] in {
 def ORC_B : Unary_r<0b001010000111, 0b101, "orc.b">,
@@ -750,60 +683,15 @@ def : InstAlias<"orc2 $rd, $rs",  (GORCI GPR:$rd, GPR:$rs, 0b11110)>;
 def : InstAlias<"orc $rd, $rs",   (GORCI GPR:$rd, GPR:$rs, 0b11111)>;
 } // Predicates = [HasStdExtZbp, IsRV32]
 
-let Predicates = [HasStdExtZbp, IsRV64] in {
-def : InstAlias<"rev16.w $rd, $rs", (GREVI GPR:$rd, GPR:$rs, 0b010000)>;
-def : InstAlias<"rev8.w $rd, $rs",  (GREVI GPR:$rd, GPR:$rs, 0b011000)>;
-def : InstAlias<"rev4.w $rd, $rs",  (GREVI GPR:$rd, GPR:$rs, 0b011100)>;
-def : InstAlias<"rev2.w $rd, $rs",  (GREVI GPR:$rd, GPR:$rs, 0b011110)>;
-def : InstAlias<"rev.w $rd, $rs",   (GREVI GPR:$rd, GPR:$rs, 0b011111)>;
-def : InstAlias<"rev32 $rd, $rs",   (GREVI GPR:$rd, GPR:$rs, 0b100000)>;
-def : InstAlias<"rev16 $rd, $rs",   (GREVI GPR:$rd, GPR:$rs, 0b110000)>;
-// rev8 is considered an instruction rather than an alias.
-def : InstAlias<"rev4 $rd, $rs",    (GREVI GPR:$rd, GPR:$rs, 0b111100)>;
-def : InstAlias<"rev2 $rd, $rs",    (GREVI GPR:$rd, GPR:$rs, 0b111110)>;
-def : InstAlias<"rev $rd, $rs",     (GREVI GPR:$rd, GPR:$rs, 0b111111)>;
-
-def : InstAlias<"zip8.w $rd, $rs",   (SHFLI   GPR:$rd, GPR:$rs, 0b01000)>;
-def : InstAlias<"unzip8.w $rd, $rs", (UNSHFLI GPR:$rd, GPR:$rs, 0b01000)>;
-def : InstAlias<"zip4.w $rd, $rs",   (SHFLI   GPR:$rd, GPR:$rs, 0b01100)>;
-def : InstAlias<"unzip4.w $rd, $rs", (UNSHFLI GPR:$rd, GPR:$rs, 0b01100)>;
-def : InstAlias<"zip2.w $rd, $rs",   (SHFLI   GPR:$rd, GPR:$rs, 0b01110)>;
-def : InstAlias<"unzip2.w $rd, $rs", (UNSHFLI GPR:$rd, GPR:$rs, 0b01110)>;
-def : InstAlias<"zip.w $rd, $rs",    (SHFLI   GPR:$rd, GPR:$rs, 0b01111)>;
-def : InstAlias<"unzip.w $rd, $rs",  (UNSHFLI GPR:$rd, GPR:$rs, 0b01111)>;
-def : InstAlias<"zip16 $rd, $rs",    (SHFLI   GPR:$rd, GPR:$rs, 0b10000)>;
-def : InstAlias<"unzip16 $rd, $rs",  (UNSHFLI GPR:$rd, GPR:$rs, 0b10000)>;
-def : InstAlias<"zip8 $rd, $rs",     (SHFLI   GPR:$rd, GPR:$rs, 0b11000)>;
-def : InstAlias<"unzip8 $rd, $rs",   (UNSHFLI GPR:$rd, GPR:$rs, 0b11000)>;
-def : InstAlias<"zip4 $rd, $rs",     (SHFLI   GPR:$rd, GPR:$rs, 0b11100)>;
-def : InstAlias<"unzip4 $rd, $rs",   (UNSHFLI GPR:$rd, GPR:$rs, 0b11100)>;
-def : InstAlias<"zip2 $rd, $rs",     (SHFLI   GPR:$rd, GPR:$rs, 0b11110)>;
-def : InstAlias<"unzip2 $rd, $rs",   (UNSHFLI GPR:$rd, GPR:$rs, 0b11110)>;
-def : InstAlias<"zip $rd, $rs",      (SHFLI   GPR:$rd, GPR:$rs, 0b11111)>;
-def : InstAlias<"unzip $rd, $rs",    (UNSHFLI GPR:$rd, GPR:$rs, 0b11111)>;
-
-def : InstAlias<"orc16.w $rd, $rs", (GORCI GPR:$rd, GPR:$rs, 0b010000)>;
-def : InstAlias<"orc8.w $rd, $rs",  (GORCI GPR:$rd, GPR:$rs, 0b011000)>;
-def : InstAlias<"orc4.w $rd, $rs",  (GORCI GPR:$rd, GPR:$rs, 0b011100)>;
-def : InstAlias<"orc2.w $rd, $rs",  (GORCI GPR:$rd, GPR:$rs, 0b011110)>;
-def : InstAlias<"orc.w $rd, $rs",   (GORCI GPR:$rd, GPR:$rs, 0b011111)>;
-def : InstAlias<"orc32 $rd, $rs",   (GORCI GPR:$rd, GPR:$rs, 0b100000)>;
-def : InstAlias<"orc16 $rd, $rs",   (GORCI GPR:$rd, GPR:$rs, 0b110000)>;
-def : InstAlias<"orc8 $rd, $rs",    (GORCI GPR:$rd, GPR:$rs, 0b111000)>;
-def : InstAlias<"orc4 $rd, $rs",    (GORCI GPR:$rd, GPR:$rs, 0b111100)>;
-def : InstAlias<"orc2 $rd, $rs",    (GORCI GPR:$rd, GPR:$rs, 0b111110)>;
-def : InstAlias<"orc $rd, $rs",     (GORCI GPR:$rd, GPR:$rs, 0b111111)>;
-} // Predicates = [HasStdExtZbp, IsRV64]
-
 let Predicates = [HasStdExtZbbOrZbp] in {
 def : InstAlias<"ror $rd, $rs1, $shamt",
                 (RORI  GPR:$rd, GPR:$rs1, uimmlog2xlen:$shamt), 0>;
 } // Predicates = [HasStdExtZbbOrZbp]
 
-let Predicates = [HasStdExtZbbOrZbp, IsRV64] in {
+let Predicates = [HasStdExtZbb, IsRV64] in {
 def : InstAlias<"rorw $rd, $rs1, $shamt",
                 (RORIW  GPR:$rd, GPR:$rs1, uimm5:$shamt), 0>;
-} // Predicates = [HasStdExtZbbOrZbp, IsRV64]
+} // Predicates = [HasStdExtZbb, IsRV64]
 
 let Predicates = [HasStdExtZbp] in {
 def : InstAlias<"grev $rd, $rs1, $shamt",
@@ -815,13 +703,6 @@ def : InstAlias<"shfl $rd, $rs1, $shamt",
 def : InstAlias<"unshfl $rd, $rs1, $shamt",
                 (UNSHFLI  GPR:$rd, GPR:$rs1, shfl_uimm:$shamt), 0>;
 } // Predicates = [HasStdExtZbp]
-
-let Predicates = [HasStdExtZbp, IsRV64] in {
-def : InstAlias<"grevw $rd, $rs1, $shamt",
-                (GREVIW  GPR:$rd, GPR:$rs1, uimm5:$shamt), 0>;
-def : InstAlias<"gorcw $rd, $rs1, $shamt",
-                (GORCIW  GPR:$rd, GPR:$rs1, uimm5:$shamt), 0>;
-} // Predicates = [HasStdExtZbp, IsRV64]
 
 // Zbp is unratified and that it would likely adopt the already ratified Zbkx names.
 // Thus current Zbp instructions are defined as aliases for Zbkx instructions.
@@ -879,13 +760,13 @@ def : Pat<(XLenVT (rotl GPR:$rs1, uimmlog2xlen:$shamt)),
           (RORI GPR:$rs1, (ImmSubFromXLen uimmlog2xlen:$shamt))>;
 } // Predicates = [HasStdExtZbbOrZbpOrZbkb]
 
-let Predicates = [HasStdExtZbbOrZbpOrZbkb, IsRV64] in {
+let Predicates = [HasStdExtZbbOrZbkb, IsRV64] in {
 def : PatGprGpr<shiftopw<riscv_rolw>, ROLW>;
 def : PatGprGpr<shiftopw<riscv_rorw>, RORW>;
 def : PatGprImm<riscv_rorw, RORIW, uimm5>;
 def : Pat<(riscv_rolw GPR:$rs1, uimm5:$rs2),
           (RORIW GPR:$rs1, (ImmSubFrom32 uimm5:$rs2))>;
-} // Predicates = [HasStdExtZbbOrZbpOrZbkb, IsRV64]
+} // Predicates = [HasStdExtZbbOrZbkb, IsRV64]
 
 let Predicates = [HasStdExtZbs] in {
 def : Pat<(XLenVT (and (not (shiftop<shl> 1, (XLenVT GPR:$rs2))), GPR:$rs1)),
@@ -1014,7 +895,7 @@ def : Pat<(or (or
                 (XLenVT (PACKH GPR:$op1rs1, GPR:$op1rs2)))>;
 } // Predicates = [HasStdExtZbpOrZbkb, IsRV32]
 
-let Predicates = [HasStdExtZbpOrZbkb, IsRV64] in {
+let Predicates = [HasStdExtZbkb, IsRV64] in {
 def : Pat<(i64 (or (zexti32 (i64 GPR:$rs1)), (shl GPR:$rs2, (i64 32)))),
           (PACK GPR:$rs1, GPR:$rs2)>;
 
@@ -1024,11 +905,11 @@ def : Pat<(binop_allwusers<or> (shl GPR:$rs2, (i64 16)),
 def : Pat<(i64 (or (sext_inreg (shl GPR:$rs2, (i64 16)), i32),
                    (zexti16 (i64 GPR:$rs1)))),
           (PACKW GPR:$rs1, GPR:$rs2)>;
-} // Predicates = [HasStdExtZbpOrZbkb, IsRV64]
+} // Predicates = [HasStdExtZbkb, IsRV64]
 
 let Predicates = [HasStdExtZbbOrZbp, IsRV32] in
 def : Pat<(i32 (and GPR:$rs, 0xFFFF)), (ZEXT_H_RV32 GPR:$rs)>;
-let Predicates = [HasStdExtZbbOrZbp, IsRV64] in
+let Predicates = [HasStdExtZbb, IsRV64] in
 def : Pat<(i64 (and GPR:$rs, 0xFFFF)), (ZEXT_H_RV64 GPR:$rs)>;
 
 let Predicates = [HasStdExtZbkb, NoStdExtZbb, IsRV32] in
