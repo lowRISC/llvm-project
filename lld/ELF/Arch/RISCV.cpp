@@ -693,18 +693,10 @@ void elf::initSymbolAnchors(Ctx &ctx) {
   }
   // Store anchors (st_value and st_value+st_size) for symbols relative to text
   // sections.
-  //
-  // For a defined symbol foo, we may have `d->file != file` with --wrap=foo.
-  // We should process foo, as the defining object file's symbol table may not
-  // contain foo after redirectSymbols changed the foo entry to __wrap_foo. To
-  // avoid adding a Defined that is undefined in one object file, use
-  // `!d->scriptDefined` to exclude symbols that are definitely not wrapped.
-  //
-  // `relaxAux->anchors` may contain duplicate symbols, but that is fine.
   for (InputFile *file : ctx.objectFiles)
     for (Symbol *sym : file->getSymbols()) {
       auto *d = dyn_cast<Defined>(sym);
-      if (!d || (d->file != file && !d->scriptDefined))
+      if (!d || d->file != file)
         continue;
       if (auto *sec = dyn_cast_or_null<InputSection>(d->section))
         if (sec->flags & SHF_EXECINSTR && sec->relaxAux) {
