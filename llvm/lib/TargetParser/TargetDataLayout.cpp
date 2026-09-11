@@ -353,7 +353,7 @@ static std::string computeRISCVDataLayout(const Triple &TT, StringRef ABIName, S
   if (!FS.empty())
     llvm::append_range(Features, llvm::split(FS, ','));
   auto ISAInfo = cantFail(llvm::RISCVISAInfo::parseFeatures(XLen, Features));
-  if (ISAInfo->hasExtension("xcheri")) {
+  if (ISAInfo->hasExtension("xcheri") || isRISCVCheriPureCapABI(ABIName)) {
     if (TT.isArch64Bit())
       Ret += "-pf200:128:128:128:64";
     else

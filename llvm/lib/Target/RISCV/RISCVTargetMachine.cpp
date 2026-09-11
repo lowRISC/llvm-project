@@ -161,6 +161,18 @@ static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
   return std::make_unique<RISCVELFTargetObjectFile>();
 }
 
+static std::string addABIImpliedFeatures(const Triple &TT, StringRef ABIName,
+                                         StringRef FS) {
+  RISCVABI::ABI ABI = RISCVABI::getTargetABI(ABIName, TT);
+  if (ABI == RISCVABI::ABI_Unknown || !RISCVABI::isCheriPureCapABI(ABI))
+    return FS.str();
+
+  std::string Ret = "+xcheri,+xcheripurecap";
+  if (!FS.empty())
+    (Ret += ',') += FS;
+  return Ret;
+}
+
 RISCVTargetMachine::RISCVTargetMachine(const Target &T, const Triple &TT,
                                        StringRef CPU, StringRef FS,
                                        const TargetOptions &Options,
@@ -168,8 +180,13 @@ RISCVTargetMachine::RISCVTargetMachine(const Target &T, const Triple &TT,
                                        std::optional<CodeModel::Model> CM,
                                        CodeGenOptLevel OL, bool JIT)
     : CodeGenTargetMachineImpl(
-          T, TT.computeDataLayout(Options.MCOptions.getABIName(), FS), TT, CPU, FS,
-          Options, getEffectiveRelocModel(RM),
+          T,
+          TT.computeDataLayout(
+              Options.MCOptions.getABIName(),
+              addABIImpliedFeatures(TT, Options.MCOptions.getABIName(), FS)),
+          TT, CPU,
+          addABIImpliedFeatures(TT, Options.MCOptions.getABIName(), FS), Options,
+          getEffectiveRelocModel(RM),
           getEffectiveCodeModel(CM, CodeModel::Small), OL),
       TLOF(createTLOF(TT)) {
   initAsmInfo();

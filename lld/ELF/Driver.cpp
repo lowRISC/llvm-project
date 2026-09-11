@@ -2305,8 +2305,14 @@ void LinkerDriver::inferIsCheriAbi() {
   if (ctx.arg.isCheriAbi)
     return;
 
-  for (const auto &f : files) {
+  for (ELFFileBase *f : ctx.objectFiles) {
     if (f->ekind == ELFNoneKind)
+      continue;
+    ctx.arg.isCheriAbi = isCheriAbi(f);
+    return;
+  }
+  for (const auto &f : files) {
+    if (f->ekind == ELFNoneKind || isa<BitcodeFile>(f.get()))
       continue;
     ctx.arg.isCheriAbi = isCheriAbi(f.get());
     return;
@@ -2321,8 +2327,14 @@ void LinkerDriver::inferIsCheriot() {
   if (!ctx.arg.isCheriAbi)
     return;
 
-  for (const auto &f : files) {
+  for (ELFFileBase *f : ctx.objectFiles) {
     if (f->ekind == ELFNoneKind)
+      continue;
+    ctx.arg.isCheriot = f->eflags & EF_RISCV_CHERIOT;
+    return;
+  }
+  for (const auto &f : files) {
+    if (f->ekind == ELFNoneKind || isa<BitcodeFile>(f.get()))
       continue;
     ctx.arg.isCheriot = f->eflags & EF_RISCV_CHERIOT;
     return;
@@ -3386,6 +3398,9 @@ template <class ELFT> void LinkerDriver::link(opt::InputArgList &args) {
   const size_t numObjsBeforeLTO = ctx.objectFiles.size();
   const size_t numInputFilesBeforeLTO = ctx.driver.files.size();
   compileBitcodeFiles<ELFT>(skipLinkedOutput);
+
+  inferIsCheriAbi();
+  inferIsCheriot();
 
   // Symbol resolution finished. Report backward reference problems,
   // --print-archive-stats=, and --why-extract=.
